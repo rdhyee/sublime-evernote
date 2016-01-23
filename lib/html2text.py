@@ -286,7 +286,7 @@ class HTML2Text(HTMLParser.HTMLParser):
 
         self.outtext = self.outtext.join(self.outtextlist)
         if self.unicode_snob:
-            nbsp = chr(name2cp('nbsp'))
+            nbsp = unichr(name2cp('nbsp'))
         else:
             nbsp = u' '
         self.outtext = self.outtext.replace(u'&nbsp_place_holder;', nbsp)
@@ -834,9 +834,9 @@ class HTML2Text(HTMLParser.HTMLParser):
             return unifiable_n[c]
         else:
             try:
-                return chr(c)
+                return unichr(c)
             except NameError: #Python3
-                return chr(c)
+                return unichr(c)
 
     def entityref(self, c):
         if not self.unicode_snob and c in unifiable.keys():
@@ -846,9 +846,9 @@ class HTML2Text(HTMLParser.HTMLParser):
             except KeyError: return "&" + c + ';'
             else:
                 try:
-                    return chr(name2cp(c))
+                    return unichr(name2cp(c))
                 except NameError: #Python3
-                    return chr(name2cp(c))
+                    return unichr(name2cp(c))
 
     def replaceEntities(self, s):
         s = s.group(1)
