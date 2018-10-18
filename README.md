@@ -52,6 +52,33 @@ See the [Changelog](https://github.com/bordaigorl/sublime-evernote/wiki/Changelo
 The Evernote plugin can be installed using Package Control.
 See the [wiki] for detailed instructions.
 
+## First use
+
+> **PLEASE READ**
+> 
+> Evernote decided to disable issuing new developer tokens
+> for some users (with no official reasons).
+>This means that the following method may not work for you:
+> the webpage you are redirected to would say developer tokens are disabled.
+> In that case you will have to contact
+> the Evernote customer service/issue a ticket
+> to get developer tokens activated for your account.
+> After they activate you, you can follow the normal procedure
+> to configure the plugin.
+
+When you first run this package from the command palette, it will launch a browser window with your Evernote developer token. Copy the token and paste it into the prompt at the bottom of your Sublime window. Sublime will store the authentication data in `Sublime Text 3/Packages/User/Evernote.sublime-settings`.
+
+If you need to reconfigure the plugin go to `Preferences > Package Settings > Evernote` and select `Reconfigure Authorisation` or go to
+
+`Command Palette` > `Evernote: Reconfigure`
+
+
+> **PLEASE NOTE**
+> 
+> The authentication method makes use of the Developer Token which is unique to your account and grants read-write access to your Evernote.
+> This token will be saved in your user settings in the `Evernote.sublime-settings` file so make sure you do not share this publicly! 
+
+
 # Issues
 
 You may encounter problems in using the plugin.
@@ -66,21 +93,6 @@ Before posting a new issue:
   3. Search for similar issues [here](https://github.com/bordaigorl/sublime-evernote/issues?q=is%3Aissue)
 
 # Usage
-
-## First use
-
-When you first run this package from the command palette, it will launch a browser window with your Evernote developer token. Copy the token and paste it into the prompt at the bottom of your Sublime window. Sublime will store the authentication data in `Sublime Text 3/Packages/User/Evernote.sublime-settings`.
-
-If you need to reconfigure the plugin go to `Preferences > Package Settings > Evernote` and select `Reconfigure Authorisation` or go to
-
-`Command Palette` > `Evernote: Reconfigure`
-
-
-> **PLEASE NOTE**
-> 
-> The authentication method makes use of the Developer Token which is unique to your account and grants read-write access to your Evernote.
-> This token will be saved in your user settings in the `Evernote.sublime-settings` file so make sure you do not share this publicly! 
-
 
 ## Commands
 
