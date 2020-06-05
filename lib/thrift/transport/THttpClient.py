@@ -125,7 +125,7 @@ class THttpClient(TTransportBase):
     self.__wbuf = BytesIO()
 
     # HTTP request
-    self.__http.putrequest('POST', self.path)
+    self.__http.putrequest('POST', self.path, skip_host=True) # Don't duplicate Host header
 
     # Write headers
     self.__http.putheader('Host', self.host)
@@ -150,7 +150,6 @@ class THttpClient(TTransportBase):
 
     # Get reply to flush the request
     self.response = self.__http.getresponse()
-    #self.code, self.message, self.headers = self.__http.getreply()
 
   # Decorate if we know how to timeout
   if hasattr(socket, 'getdefaulttimeout'):
