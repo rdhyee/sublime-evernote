@@ -32,18 +32,13 @@ See [Commands](#commands) and the [wiki] for details.
 
 ## What's new
 
+**v2.7.3**
+
++ Fix: patching Evernote's SDK to fix an issue due to undocumented changes in API (fixes #216)
+
 **v2.7.2**
 
 + Fix: patching Evernote's SDK to make it compatible with ST 3126 on Linux (fixes #150)
-
-**v2.7.1**
-
-+ Fix: solved incompatibility with [Markdown Preview](https://packagecontrol.io/packages/Markdown%20Preview) plugin (fixes #119)
-+ Fix: multiple metadata headers now supported (thanks [@xdutaotao](https://github.com/bordaigorl/sublime-evernote/issues/127#issuecomment-208210297))
-+ Fix: long CSS for body now properly supported (fixes #128)
-+ Fix: url/filepath detection fixed for Windows (fixes #137, thanks @358463121)
-+ **Open note**: accept links as `note_guid` and offer options to load from clipboard/prompt (see [wiki](https://github.com/bordaigorl/sublime-evernote/wiki/The-Open-Note-Command))
-+ **Insert Note Link**: now accepts `template` and `to` arguments
 
 See the [Changelog](https://github.com/bordaigorl/sublime-evernote/wiki/Changelog) for the full list.
 

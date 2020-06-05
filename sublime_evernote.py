@@ -41,7 +41,7 @@ from datetime import datetime
 
 from base64 import b64encode, b64decode
 
-EVERNOTE_PLUGIN_VERSION = "2.7.2"
+EVERNOTE_PLUGIN_VERSION = "2.7.3"
 USER_AGENT = {'User-Agent': 'SublimeEvernote/' + EVERNOTE_PLUGIN_VERSION}
 
 EVERNOTE_SETTINGS = "Evernote.sublime-settings"
@@ -938,6 +938,162 @@ class OpenEvernoteNoteCommand(EvernoteDoWindow):
             self.message('Note "%s" opened!' % note.title)
             self.update_status_info(note, newview)
             note_is_current(newview)
+        except Exception as e:
+            sublime.error_message(explain_error(e))
+
+
+class OpenEvernoteNotesCommand(EvernoteDoWindow):
+
+    def do_run(self, note_guid=None, by_searching=None,
+               from_notebook=None, with_tags=None,
+               order=None, ascending=None, max_notes=None, **kwargs):
+        notebooks = self.get_notebooks()
+
+        search_args = {}
+
+        order = order or self.settings.get("notes_order", "default").upper()
+        search_args['order'] = Types.NoteSortOrder._NAMES_TO_VALUES.get(order.upper())  # None = default
+        search_args['ascending'] = ascending or self.settings.get("notes_order_ascending", False)
+
+        if from_notebook:
+            try:
+                search_args['notebookGuid'] = self.notebook_from_name(from_notebook).guid
+            except:
+                sublime.error_message("Notebook %s not found!" % from_notebook)
+                return
+
+        if with_tags:
+            if isinstance(with_tags, str):
+                with_tags = [with_tags]
+            try:
+                search_args['tagGuids'] = [self.tag_from_name(name) for name in with_tags]
+            except KeyError as e:
+                sublime.error_message("Tag %s not found!" % e)
+
+        def notes_panel(notes, show_notebook=False):
+            if not notes:
+                self.message("No notes found!")  # Should it be a dialog?
+                return
+
+            for note in notes:
+                self.message('Retrieving note "%s"...' % note.title)
+                self.open_note(note.guid, **kwargs)
+
+        def on_notebook(notebook):
+            if notebook < 0:
+                return
+            search_args['notebookGuid'] = notebooks[notebook].guid
+            notes = self.find_notes(search_args, max_notes)
+            async_do(lambda: notes_panel(notes), "Fetching notes list", done_msg=None)
+
+        def do_search(query):
+            self.message("Searching notes...")
+            search_args['words'] = query
+            async_do(lambda: notes_panel(self.find_notes(search_args, max_notes), True), "Fetching notes list", done_msg=None)
+
+        if note_guid:
+            if note_guid == "prompt":
+                self.window.show_input_panel("Note GUID or link:", "", lambda x: self.open_note(x, **kwargs), None, None)
+                return
+            elif note_guid == "clipboard":
+                note_guid = sublime.get_clipboard(2000)
+
+            self.open_note(note_guid, **kwargs)
+            return
+
+        if by_searching:
+            if isinstance(by_searching, str):
+                do_search(by_searching)
+            else:
+                p = self.window.show_input_panel("Enter search query:", "", do_search, None, None)
+                if isinstance(by_searching, dict):
+                    p.run_command("insert_snippet", {"contents": by_searching.get("snippet", "")})
+            return
+        if from_notebook or with_tags:
+            notes_panel(self.find_notes(search_args, max_notes), not from_notebook)
+        elif len(notebooks) == 1:
+            on_notebook(0)
+        else:
+            if self.settings.get("show_stacks", True):
+                menu = ["%s » %s" % (nb.stack, nb.name) if nb.stack else nb.name for nb in notebooks]
+            else:
+                menu = [nb.name for nb in notebooks]
+            self.window.show_quick_panel(menu, on_notebook)
+
+    def find_notes(self, search_args, max_notes=None):
+        return self.get_note_store().findNotesMetadata(
+            self.token(),
+            NoteStore.NoteFilter(**search_args),
+            None, max_notes or self.settings.get("max_notes", 100),
+            NoteStore.NotesMetadataResultSpec(includeTitle=True, includeNotebookGuid=True)).notes
+
+    def open_note(self, guid, convert=True, **unk_args):
+        try:
+            guid = guid.strip().split('/')[-1]
+        except Exception:
+            pass
+        async_do(lambda: self.do_open_note(guid, convert, **unk_args), "Retrieving note")
+
+    def do_open_note(self, guid, convert=True, **unk_args):
+        try:
+            noteStore = self.get_note_store()
+            note = noteStore.getNote(self.token(), guid, True, False, False, False)
+            nb_name = self.notebook_from_guid(note.notebookGuid).name
+            LOG(note.content)
+            LOG(note.guid)
+            if convert:
+                # tags = [noteStore.getTag(self.token(), guid).name for guid in (note.tagGuids or [])]
+                # tags = [self.tag_from_guid(guid) for guid in (note.tagGuids or [])]
+                tags = noteStore.getNoteTagNames(self.token(), note.guid)
+                meta = metadata_header(note.title, tags, nb_name)
+                body_start = note.content.find('<en-note')
+                if body_start < 0:
+                    body_start = 0
+                else:
+                    body_start = note.content.find('>', body_start) + 1
+                builtin = note.content.find(SUBLIME_EVERNOTE_COMMENT_BEG, body_start, body_start+100)
+                if builtin >= 0:
+                    try:
+                        builtin_end = note.content.find(SUBLIME_EVERNOTE_COMMENT_END, builtin)
+                        bmdtxt = note.content[builtin+len(SUBLIME_EVERNOTE_COMMENT_BEG):builtin_end]
+                        mdtxt = b64decode(bmdtxt.encode('utf8')).decode('utf8')
+                        parts = extract_metadata(mdtxt)
+                        if parts["metadata"]:
+                            if parts["metadata"].get("title") == note.title and \
+                               "tags" in parts["metadata"] and \
+                               set(parts["metadata"].get("tags")) == set(tags) and \
+                               parts["metadata"].get("notebook") == nb_name:
+                                meta = ""
+                            else:
+                                LOG("Overridding metadata")
+                                mdtxt = parts["contents"]
+                        LOG("Loaded from built-in comment")
+                    except Exception as e:
+                        mdtxt = ""
+                        LOG("Loading from built-in comment failed", e)
+                if builtin < 0 or mdtxt == "":
+                    try:
+                        mdtxt = html2text.html2text(note.content)
+                        LOG("Conversion ok")
+                    except Exception as e:
+                        mdtxt = note.content
+                        LOG("Conversion failed", e)
+
+                newview = self.window.new_file()
+                syntax = 'Packages/MarkdownEditing/Markdown.sublime-syntax'
+                note_contents = meta+mdtxt
+            else:
+                newview = self.window.new_file()
+                syntax = find_syntax("XML")
+                note_contents = note.content
+            newview.set_syntax_file(syntax)
+            newview.set_scratch(True)
+            replace_view_text(newview, note_contents)
+            newview.set_name(note.title)
+            newview.settings().set("$evernote_guid", note.guid)
+            self.message('Note "%s" opened!' % note.title)
+            self.update_status_info(note, newview)
+            # note_is_current(newview)
         except Exception as e:
             sublime.error_message(explain_error(e))
 
