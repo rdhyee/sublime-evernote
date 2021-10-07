@@ -513,11 +513,11 @@ class EvernoteDo():
         content = '<?xml version="1.0" encoding="UTF-8"?>'
         content += '<!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml2.dtd">'
         content += '<en-note%s>' % wrapper_style
-        hidden = ('\n%s%s%s\n' %
-                    (SUBLIME_EVERNOTE_COMMENT_BEG,
-                     b64encode(contents.encode('utf8')).decode('utf8'),
-                     SUBLIME_EVERNOTE_COMMENT_END))
-        content += hidden
+        # hidden = ('\n%s%s%s\n' %
+        #             (SUBLIME_EVERNOTE_COMMENT_BEG,
+        #              b64encode(contents.encode('utf8')).decode('utf8'),
+        #              SUBLIME_EVERNOTE_COMMENT_END))
+        # content += hidden
         content += body
         LOG(body)
         content += '</en-note>'
